@@ -1,6 +1,12 @@
+import cats.effect.{ExitCode, IO, IOApp}
+import com.typesafe.scalalogging.Logger
 
-object Main extends App {
+object Main extends IOApp {
 
-  println("hello")
+  private val logger = Logger("main")
+
+  override def run(args: List[String]): IO[ExitCode] = {
+    IO(logger.info("Hello")).as(ExitCode.Success)
+  }
 
 }

@@ -4,19 +4,22 @@ scalaVersion := "2.13.3"
 
 libraryDependencies ++= {
 
-  object Versions {
+  object V {
     val scalatest = "3.2.0"
+    val cats = "2.2.0"
   }
 
   Seq(
 
     // prod
+    "org.typelevel" %% "cats-core" % V.cats,
+    "org.typelevel" %% "cats-effect" % V.cats,
     "com.iheart" %% "ficus" % "1.5.0",
     "com.typesafe.scala-logging" %% "scala-logging" % "3.9.2",
     "ch.qos.logback" % "logback-classic" % "1.2.3",
 
     // test
-    "org.scalatest" %% "scalatest" % Versions.scalatest % "test"
+    "org.scalatest" %% "scalatest" % V.scalatest % "test"
 
   ).map(_ withSources() withJavadoc())
 
