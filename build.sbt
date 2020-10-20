@@ -17,6 +17,7 @@ libraryDependencies ++= {
     "com.iheart" %% "ficus" % "1.5.0",
     "com.typesafe.scala-logging" %% "scala-logging" % "3.9.2",
     "ch.qos.logback" % "logback-classic" % "1.2.3",
+    "net.ruippeixotog" %% "scala-scraper" % "2.2.0",
 
     // test
     "org.scalatest" %% "scalatest" % V.scalatest % "test"
