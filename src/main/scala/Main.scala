@@ -78,7 +78,9 @@ object Main extends IOApp {
       }
       sentRoutes = routes.filter(_.isSent)
       perGrade = sentRoutes.groupBy(_.authorGrade)
-      countPerGrade = perGrade.view.mapValues(_.size).toList.sortBy(_._1)
+      countPerGrade = perGrade.view.mapValues { routes =>
+        routes.groupBy(_.style.get).view.mapValues(_.size).toList
+      }.toList.sortBy(_._1)
       _ <- IO(logger.info(s"Got ${routes.size} routes in document"))
       _ <- IO(logger.info(s"Got ${sentRoutes.size} ascents in document"))
       _ <- IO(logger.debug(s"Sample:\n${sentRoutes.take(5).mkString("\n")}"))
