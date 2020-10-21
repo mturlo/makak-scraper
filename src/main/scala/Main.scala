@@ -1,3 +1,4 @@
+import cats.implicits._
 import cats.effect.{ExitCode, IO, IOApp}
 import com.typesafe.scalalogging.Logger
 import net.ruippeixotog.scalascraper.browser.JsoupBrowser
@@ -10,7 +11,12 @@ import scala.util.matching.Regex
 object Main extends IOApp {
 
   private val logger = Logger("main")
-  private val browser = JsoupBrowser()
+  private val browser = {
+    val jsoup = JsoupBrowser.typed()
+    jsoup.setCookie("arenamakak.pl", "user_email", "maciej.turlo@gmail.com")
+    jsoup.setCookie("www.arenamakak.pl", "user_email", "maciej.turlo@gmail.com")
+    jsoup
+  }
 
   case class Route(name: String, authorGrade: Grade, communityGrade: Grade, style: Option[String]) {
     def isSent: Boolean = style.isDefined
@@ -71,10 +77,10 @@ object Main extends IOApp {
   val magenta: Paint = paint(Console.MAGENTA)
   val cyan: Paint = paint(Console.CYAN)
 
-  def routesFromFile(fileName: String): IO[List[Route]] = {
+  def routesFromUrl(url: String): IO[List[Route]] = {
     for {
-      doc <- IO(browser.parseFile(s"src/main/resources/$fileName"))
-      _ <- IO(logger.info(s"Hello, reading from ${doc.title}"))
+      doc <- IO(browser.get(s"https://arenamakak.pl/ranking-drog/$url"))
+      _ <- IO(logger.info(s"Hello, reading from $url"))
       routes <- IO {
         (doc >> elementList(".ranking-element")).map { element =>
           val children = element.children.toList
@@ -90,13 +96,19 @@ object Main extends IOApp {
     }
   }
 
+  def routesArchived: IO[List[Route]] = {
+    (5 to 7)
+      .toList
+      .map(l => s"archive?level=at-least-$l&author=&rating=")
+      .map(routesFromUrl)
+      .sequence
+      .map(_.flatten)
+  }
+
   override def run(args: List[String]): IO[ExitCode] = {
     for {
-      routesArchived5 <- routesFromFile("makak-archive-5.html")
-      routesArchived6 <- routesFromFile("makak-archive-6.html")
-      routesArchived7 <- routesFromFile("makak-archive-7.html")
-      routesCurrent <- routesFromFile("makak-current.html")
-      routesArchived = routesArchived5 ++ routesArchived6 ++ routesArchived7
+      routesArchived <- routesArchived
+      routesCurrent <- routesFromUrl("index.php?level=&author=&rating=")
       routes = routesArchived ++ routesCurrent
       sentRoutes = routes.filter(_.isSent)
       perGrade = sentRoutes.groupBy(_.authorGrade)
