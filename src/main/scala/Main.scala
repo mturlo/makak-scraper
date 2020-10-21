@@ -107,10 +107,14 @@ object Main extends IOApp {
       routesCurrent <- routesFromUrl("index.php?level=&author=&rating=")
       routes = routesArchived ++ routesCurrent
       sentRoutes = routes.filter(_.isSent)
+      _ <- IO(logger.info(s"Got ${routes.size} routes"))
+      _ <- IO(logger.info(s"Got ${sentRoutes.size} ascents"))
+      _ <- IO(logger.debug(s"Sample:\n${sentRoutes.take(5).mkString("\n")}"))
       perGrade = sentRoutes.groupBy(_.authorGrade)
       countPerGrade = perGrade.view.mapValues { routes =>
         routes.groupBy(_.style.get).view.mapValues(_.size).toMap
       }.toList.sortBy(_._1).reverse
+      _ <- IO(logger.debug(s"Ascents per grade: $countPerGrade"))
       maxCountPerGrade = countPerGrade.map(_._2.values.sum).max
       pyramid = countPerGrade.map {
         case (grade, a) =>
@@ -123,10 +127,6 @@ object Main extends IOApp {
           val padding = s"\t$spaces"
           s"${cyan(grade)}:$padding$row"
       }.mkString("\n")
-      _ <- IO(logger.info(s"Got ${routes.size} routes"))
-      _ <- IO(logger.info(s"Got ${sentRoutes.size} ascents"))
-      _ <- IO(logger.debug(s"Sample:\n${sentRoutes.take(5).mkString("\n")}"))
-      _ <- IO(logger.debug(s"Ascents per grade: $countPerGrade"))
       _ <- IO(logger.info(s"Pyramid:\n$pyramid"))
     } yield {
       ExitCode.Success
