@@ -62,6 +62,15 @@ object Main extends IOApp {
     }
   }
 
+  type Paint = Any => String
+  private def paint(colour: String)(any: Any): String = s"$colour$any${Console.RESET}"
+  val red: Paint = paint(Console.RED)
+  val yellow: Paint = paint(Console.YELLOW)
+  val green: Paint = paint(Console.GREEN)
+  val blue: Paint = paint(Console.BLUE)
+  val magenta: Paint = paint(Console.MAGENTA)
+  val cyan: Paint = paint(Console.CYAN)
+
   override def run(args: List[String]): IO[ExitCode] = {
     for {
       doc <- IO(browser.parseFile("src/main/resources/makak-archive.html"))
@@ -79,12 +88,25 @@ object Main extends IOApp {
       sentRoutes = routes.filter(_.isSent)
       perGrade = sentRoutes.groupBy(_.authorGrade)
       countPerGrade = perGrade.view.mapValues { routes =>
-        routes.groupBy(_.style.get).view.mapValues(_.size).toList
-      }.toList.sortBy(_._1)
+        routes.groupBy(_.style.get).view.mapValues(_.size).toMap
+      }.toList.sortBy(_._1).reverse
+      maxCountPerGrade = countPerGrade.map(_._2.values.sum).max
+      pyramid = countPerGrade.map {
+        case (grade, a) =>
+          val onsights = a.getOrElse("OS", 0)
+          val flashes = a.getOrElse("FL", 0)
+          val redpoints = a.getOrElse("RP", 0)
+          def foo(num: Int, char: Char, paint: Paint) = paint(Seq.fill(num)(char).mkString)
+          val row = foo(redpoints, '-', red) + foo(flashes, '~', yellow) + foo(onsights * 2, '=', green) + foo(flashes, '~', yellow) + foo(redpoints, '-', red)
+          val spaces = Seq.fill(maxCountPerGrade * 2 - row.length / 2 - maxCountPerGrade / 2)(" ").mkString
+          val padding = s"\t$spaces"
+          s"${cyan(grade)}:$padding$row"
+      }.mkString("\n")
       _ <- IO(logger.info(s"Got ${routes.size} routes in document"))
       _ <- IO(logger.info(s"Got ${sentRoutes.size} ascents in document"))
       _ <- IO(logger.debug(s"Sample:\n${sentRoutes.take(5).mkString("\n")}"))
       _ <- IO(logger.info(s"Ascents per grade: $countPerGrade"))
+      _ <- IO(logger.info(s"Pyramid:\n$pyramid"))
     } yield {
       ExitCode.Success
     }
