@@ -37,12 +37,9 @@ object Main extends IOApp {
       val letter = "[A-C]"
       val full: Regex = s"($number)($letter)?(\\+)?".r
       val border: Regex = s"$full/($number)?($letter)(\\+)?".r
-      println(full)
-      println(border)
       val unknown: String = "?"
     }
     def parse(str: String): Grade = {
-      println(s"===str = '${str}'")
       str match {
         case pattern.full(number, null, plus)                                          =>
           FullGrade(number.toInt, "A", plus == "+")
@@ -75,7 +72,6 @@ object Main extends IOApp {
           val name = element >> text(".name h4")
           val authorGrade = children(1) >> text("h4")
           val communityGrade = (children(2) >> text("h4")).split(" ").head
-          println(name)
           val style = element >?> text(".btn-active")
           Route(name, Grade.parse(authorGrade), Grade.parse(communityGrade), style)
         }
@@ -85,7 +81,7 @@ object Main extends IOApp {
       countPerGrade = perGrade.view.mapValues(_.size).toList.sortBy(_._1)
       _ <- IO(logger.info(s"Got ${routes.size} routes in document"))
       _ <- IO(logger.info(s"Got ${sentRoutes.size} ascents in document"))
-      _ <- IO(logger.info(s"Sample:\n${sentRoutes.take(5).mkString("\n")}"))
+      _ <- IO(logger.debug(s"Sample:\n${sentRoutes.take(5).mkString("\n")}"))
       _ <- IO(logger.info(s"Ascents per grade: $countPerGrade"))
     } yield {
       ExitCode.Success
