@@ -71,9 +71,9 @@ object Main extends IOApp {
   val magenta: Paint = paint(Console.MAGENTA)
   val cyan: Paint = paint(Console.CYAN)
 
-  override def run(args: List[String]): IO[ExitCode] = {
+  def routesFromFile(fileName: String): IO[List[Route]] = {
     for {
-      doc <- IO(browser.parseFile("src/main/resources/makak-archive.html"))
+      doc <- IO(browser.parseFile(s"src/main/resources/$fileName"))
       _ <- IO(logger.info(s"Hello, reading from ${doc.title}"))
       routes <- IO {
         (doc >> elementList(".ranking-element")).map { element =>
@@ -85,6 +85,19 @@ object Main extends IOApp {
           Route(name, Grade.parse(authorGrade), Grade.parse(communityGrade), style)
         }
       }
+    } yield {
+      routes
+    }
+  }
+
+  override def run(args: List[String]): IO[ExitCode] = {
+    for {
+      routesArchived5 <- routesFromFile("makak-archive-5.html")
+      routesArchived6 <- routesFromFile("makak-archive-6.html")
+      routesArchived7 <- routesFromFile("makak-archive-7.html")
+      routesCurrent <- routesFromFile("makak-current.html")
+      routesArchived = routesArchived5 ++ routesArchived6 ++ routesArchived7
+      routes = routesArchived ++ routesCurrent
       sentRoutes = routes.filter(_.isSent)
       perGrade = sentRoutes.groupBy(_.authorGrade)
       countPerGrade = perGrade.view.mapValues { routes =>
@@ -102,10 +115,10 @@ object Main extends IOApp {
           val padding = s"\t$spaces"
           s"${cyan(grade)}:$padding$row"
       }.mkString("\n")
-      _ <- IO(logger.info(s"Got ${routes.size} routes in document"))
-      _ <- IO(logger.info(s"Got ${sentRoutes.size} ascents in document"))
+      _ <- IO(logger.info(s"Got ${routes.size} routes"))
+      _ <- IO(logger.info(s"Got ${sentRoutes.size} ascents"))
       _ <- IO(logger.debug(s"Sample:\n${sentRoutes.take(5).mkString("\n")}"))
-      _ <- IO(logger.info(s"Ascents per grade: $countPerGrade"))
+      _ <- IO(logger.debug(s"Ascents per grade: $countPerGrade"))
       _ <- IO(logger.info(s"Pyramid:\n$pyramid"))
     } yield {
       ExitCode.Success
