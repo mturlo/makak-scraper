@@ -1,9 +1,9 @@
 import cats.effect.{ExitCode, IO, IOApp}
 import com.typesafe.scalalogging.Logger
+import net.ruippeixotog.scalascraper.browser.JsoupBrowser
+
 import net.ruippeixotog.scalascraper.dsl.DSL._
 import net.ruippeixotog.scalascraper.dsl.DSL.Extract._
-import net.ruippeixotog.scalascraper.dsl.DSL.Parse._
-import net.ruippeixotog.scalascraper.browser.JsoupBrowser
 
 import scala.util.matching.Regex
 
@@ -16,21 +16,22 @@ object Main extends IOApp {
     def isSent: Boolean = style.isDefined
   }
 
-  sealed trait Grade
+  sealed trait Grade {
+    def value: Double
+  }
   case class FullGrade(number: Int, letter: String, plus: Boolean) extends Grade {
-    override def toString: String = s"$number$letter${if(plus)"+" else ""}"
+    override def toString: String = s"$number$letter${if (plus) "+" else ""}"
+    override def value: Double = number.toDouble * 10 + (letter.head.toDouble - 65) + (if (plus) 0.5 else 0)
   }
   case class BorderGrade(lower: Grade, upper: Grade) extends Grade {
     override def toString: String = s"$lower/$upper"
+    override def value: Double = lower.value + 0.1
   }
-  case object UnknownGrade extends Grade
+  case object UnknownGrade extends Grade {
+    override def value: Double = 0
+  }
   object Grade {
-    implicit val ordering: Ordering[Grade] = {
-      Ordering.fromLessThan {
-        case (l: FullGrade, r: FullGrade) => false
-        case _                            => false
-      }
-    }
+    implicit val ordering: Ordering[Grade] = Ordering.by(_.value)
     object pattern {
       val number = "\\d"
       val letter = "[A-C]"
@@ -43,6 +44,8 @@ object Main extends IOApp {
     def parse(str: String): Grade = {
       println(s"===str = '${str}'")
       str match {
+        case pattern.full(number, null, plus)                                          =>
+          FullGrade(number.toInt, "A", plus == "+")
         case pattern.full(number, letter, plus)                                        =>
           FullGrade(number.toInt, letter, plus == "+")
         case pattern.border(number, letter, plus, upperNumber, upperLetter, upperPlus) =>
