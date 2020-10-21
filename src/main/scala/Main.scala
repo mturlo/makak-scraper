@@ -11,12 +11,7 @@ import scala.util.matching.Regex
 object Main extends IOApp {
 
   private val logger = Logger("main")
-  private val browser = {
-    val jsoup = JsoupBrowser.typed()
-    jsoup.setCookie("arenamakak.pl", "user_email", "maciej.turlo@gmail.com")
-    jsoup.setCookie("www.arenamakak.pl", "user_email", "maciej.turlo@gmail.com")
-    jsoup
-  }
+  private val browser = JsoupBrowser.typed()
 
   case class Route(name: String, authorGrade: Grade, communityGrade: Grade, style: Option[String]) {
     def isSent: Boolean = style.isDefined
@@ -80,7 +75,7 @@ object Main extends IOApp {
   def routesFromUrl(url: String): IO[List[Route]] = {
     for {
       doc <- IO(browser.get(s"https://arenamakak.pl/ranking-drog/$url"))
-      _ <- IO(logger.info(s"Hello, reading from $url"))
+      _ <- IO(logger.info(s"Reading HTML from $url"))
       routes <- IO {
         (doc >> elementList(".ranking-element")).map { element =>
           val children = element.children.toList
@@ -106,6 +101,7 @@ object Main extends IOApp {
   }
 
   override def run(args: List[String]): IO[ExitCode] = {
+    browser.setCookie("arenamakak.pl", "user_email", args.head)
     for {
       routesArchived <- routesArchived
       routesCurrent <- routesFromUrl("index.php?level=&author=&rating=")
