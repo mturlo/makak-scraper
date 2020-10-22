@@ -1,3 +1,4 @@
+import java.text.NumberFormat
 
 trait Display {
 
@@ -38,12 +39,15 @@ trait Display {
       accumulatedGrades / totalGrades
     }
     val avgGrade = Grade.fromValue(avgGradeValue)
+    val percentage = 1 + (avgGradeValue - avgGrade.value) / avgGrade.value
+    val format = NumberFormat.getPercentInstance()
+    format.setMaximumFractionDigits(2)
     "┌─Grade──┬─OS─┬─RP─┬".padTo(longestRowLen - 51, '─') + "┐\n" +
     pyramid
       .map(row => s"$l ${row.padTo(longestRowLen, ' ')} $l")
       .mkString("", "\n", "\n") +
     "└────────┴────┴────┴".padTo(longestRowLen - 51, '─') + "┘\n" +
-    s"Average grade: $avgGrade ($avgGradeValue)"
+    s"Average grade: $avgGrade (${format.format(percentage)})"
   }
 
 }
