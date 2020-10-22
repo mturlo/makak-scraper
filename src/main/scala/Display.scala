@@ -37,12 +37,13 @@ trait Display {
       }
       accumulatedGrades / totalGrades
     }
+    val avgGrade = Grade.fromValue(avgGradeValue)
     "┌─Grade──┬─OS─┬─RP─┬".padTo(longestRowLen - 51, '─') + "┐\n" +
     pyramid
       .map(row => s"$l ${row.padTo(longestRowLen, ' ')} $l")
       .mkString("", "\n", "\n") +
     "└────────┴────┴────┴".padTo(longestRowLen - 51, '─') + "┘\n" +
-    s"Average grade: 6A+ ($avgGradeValue)"
+    s"Average grade: $avgGrade ($avgGradeValue)"
   }
 
 }

@@ -1,3 +1,4 @@
+import scala.collection.immutable.{AbstractSeq, LinearSeq}
 import scala.collection.mutable.ListBuffer
 import scala.util.matching.Regex
 
@@ -59,7 +60,9 @@ object Grade {
     }
   }
   def fromValue(value: Double): Grade = {
-    ???
+    all.map { g =>
+        g -> Math.abs(value - g.value)
+    }.minBy(_._2)._1
   }
   def range(from: Grade, to: Grade): Seq[Grade] = {
     var tmp = from
@@ -70,7 +73,10 @@ object Grade {
     }
     buffer.toList
   }
+  def all: Seq[Grade] = range(min, max)
   implicit class GradeStringOps(inner: String) {
     def grade: Grade = Grade.parse(inner)
   }
+  val min: Grade = "4A".grade
+  val max: Grade = "9C".grade
 }
