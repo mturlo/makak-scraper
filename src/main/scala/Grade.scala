@@ -1,7 +1,17 @@
+import scala.collection.mutable.ListBuffer
 import scala.util.matching.Regex
 
 sealed trait Grade {
   def value: Double
+  def increment: Grade = {
+    this match {
+      case BorderGrade(_, upper)            => upper
+      case FullGrade(number, "C", true)     => BorderGrade(this, FullGrade(number + 1, "A", plus = false))
+      case FullGrade(number, letter, true)  => BorderGrade(this, FullGrade(number, (letter.head.toInt + 1).toChar.toString, plus = false))
+      case FullGrade(number, letter, false) => FullGrade(number, letter, plus = true)
+      case UnknownGrade                     => UnknownGrade
+    }
+  }
 }
 
 case class FullGrade(number: Int, letter: String, plus: Boolean) extends Grade {
@@ -11,7 +21,7 @@ case class FullGrade(number: Int, letter: String, plus: Boolean) extends Grade {
 
 case class BorderGrade(lower: Grade, upper: Grade) extends Grade {
   override def toString: String = s"$lower/$upper"
-  override def value: Double = lower.value + 0.1
+  override def value: Double = (lower.value + upper.value) / 2
 }
 
 case object UnknownGrade extends Grade {
@@ -47,5 +57,20 @@ object Grade {
       case ""                                                                        =>
         UnknownGrade
     }
+  }
+  def fromValue(value: Double): Grade = {
+    ???
+  }
+  def range(from: Grade, to: Grade): Seq[Grade] = {
+    var tmp = from
+    var buffer = ListBuffer.empty[Grade]
+    while (tmp != to) {
+      buffer += tmp
+      tmp = tmp.increment
+    }
+    buffer.toList
+  }
+  implicit class GradeStringOps(inner: String) {
+    def grade: Grade = Grade.parse(inner)
   }
 }

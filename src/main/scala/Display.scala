@@ -29,11 +29,20 @@ trait Display {
         s"$gradeStr$l$stats$l $row"
     }
     val longestRowLen = pyramid.map(_.length).max
+    val avgGradeValue = {
+      val sumCountPerGrade = countPerGrade.map { case (grade, a) => grade -> a.values.sum }
+      val totalGrades = sumCountPerGrade.map(_._2).sum
+      val accumulatedGrades = sumCountPerGrade.foldLeft(0d) {
+        case (acc, (grade, n)) => acc + grade.value * n
+      }
+      accumulatedGrades / totalGrades
+    }
     "┌─Grade──┬─OS─┬─RP─┬".padTo(longestRowLen - 51, '─') + "┐\n" +
     pyramid
       .map(row => s"$l ${row.padTo(longestRowLen, ' ')} $l")
       .mkString("", "\n", "\n") +
-    "└────────┴────┴────┴".padTo(longestRowLen - 51, '─') + "┘\n"
+    "└────────┴────┴────┴".padTo(longestRowLen - 51, '─') + "┘\n" +
+    s"Average grade: 6A+ ($avgGradeValue)"
   }
 
 }
