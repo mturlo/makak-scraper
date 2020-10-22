@@ -40,7 +40,7 @@ trait Routes {
         }
       }
     } yield {
-      routes
+      routes.filter(_.isSent)
     }
   }
 
@@ -63,14 +63,9 @@ trait Routes {
       .reverse
   }
 
-  def getRoutes(user: String)(implicit parallel: Parallel[IO]): IO[List[Route]] = {
+  def getRoutes(user: String)(implicit parallel: Parallel[IO]): IO[(List[Route], List[Route])] = {
     browser.setCookie("arenamakak.pl", "user_email", user)
-    List(
-      routesArchived,
-      routesFromUrl("index.php?level=&author=&rating=")
-    )
-      .parSequence
-      .map(_.flatten)
+    (routesArchived, routesFromUrl("index.php?level=&author=&rating=")).parTupled
   }
 
 }
