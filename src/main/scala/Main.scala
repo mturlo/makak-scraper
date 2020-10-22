@@ -15,18 +15,8 @@ object Main
       sentRoutes = routes.filter(_.isSent)
       _ <- IO(logger.info(s"Got ${routes.size} routes"))
       _ <- IO(logger.info(s"Got ${sentRoutes.size} ascents"))
-      _ <- IO(logger.debug(s"Sample:\n${sentRoutes.take(5).mkString("\n")}"))
-      countPerGrade = {
-        sentRoutes
-          .groupBy(_.authorGrade)
-          .view
-          .mapValues(_.groupBy(_.style.get).view.mapValues(_.size).toMap)
-          .toList
-          .sortBy(_._1)
-          .reverse
-      }
-      _ <- IO(logger.debug(s"Ascents per grade: $countPerGrade"))
-      _ <- IO(logger.info(s"Pyramid:\n${display(countPerGrade)}"))
+      _ <- IO(logger.info("By author grade:\n" + display(countPerGrade(sentRoutes)(_.authorGrade))))
+      _ <- IO(logger.info("By community grade:\n" + display(countPerGrade(sentRoutes)(_.communityGradeWithFallback))))
     } yield {
       ExitCode.Success
     }

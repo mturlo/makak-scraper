@@ -17,6 +17,12 @@ trait Routes {
                    communityGrade: Grade,
                    style: Option[String]) {
     def isSent: Boolean = style.isDefined
+    def communityGradeWithFallback: Grade = {
+      communityGrade match {
+        case UnknownGrade => authorGrade
+        case notUnknown => notUnknown
+      }
+    }
   }
 
   def routesFromUrl(url: String): IO[List[Route]] = {
@@ -45,6 +51,16 @@ trait Routes {
       .map(routesFromUrl)
       .parSequence
       .map(_.flatten)
+  }
+
+  def countPerGrade(routes: List[Route])(grouping: Route => Grade): List[(Grade, Map[String, Int])] = {
+    routes
+      .groupBy(grouping)
+      .view
+      .mapValues(_.groupBy(_.style.get).view.mapValues(_.size).toMap)
+      .toList
+      .sortBy(_._1)
+      .reverse
   }
 
   def getRoutes(user: String)(implicit parallel: Parallel[IO]): IO[List[Route]] = {
