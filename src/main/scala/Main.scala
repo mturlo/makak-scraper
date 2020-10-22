@@ -92,13 +92,18 @@ object Main extends IOApp {
   }
 
   def routesArchived: IO[List[Route]] = {
-    (5 to 7)
-      .toList
-      .map(l => s"archive?level=at-least-$l&author=&rating=")
-      .map(routesFromUrl)
-      .sequence
-      .map(_.flatten)
+        (5 to 7)
+          .toList
+          .map(l => s"archive?level=at-least-$l&author=&rating=")
+          .map(routesFromUrl)
+          .sequence
+          .map(_.flatten)
+//    IO(Nil)
   }
+
+  val b = '▉'
+  val l = '│'
+  def draw(num: Int, char: Char, paint: Paint) = paint(Seq.fill(num)(char).mkString)
 
   override def run(args: List[String]): IO[ExitCode] = {
     browser.setCookie("arenamakak.pl", "user_email", args.head)
@@ -115,19 +120,24 @@ object Main extends IOApp {
         routes.groupBy(_.style.get).view.mapValues(_.size).toMap
       }.toList.sortBy(_._1).reverse
       _ <- IO(logger.debug(s"Ascents per grade: $countPerGrade"))
-      maxCountPerGrade = countPerGrade.map(_._2.values.sum).max
       pyramid = countPerGrade.map {
         case (grade, a) =>
           val onsights = a.getOrElse("OS", 0)
           val flashes = a.getOrElse("FL", 0)
           val redpoints = a.getOrElse("RP", 0)
-          def foo(num: Int, char: Char, paint: Paint) = paint(Seq.fill(num)(char).mkString)
-          val row = foo(redpoints, '-', red) + foo(flashes, '~', yellow) + foo(onsights * 2, '=', green) + foo(flashes, '~', yellow) + foo(redpoints, '-', red)
-          val spaces = Seq.fill(maxCountPerGrade * 2 - row.length / 2 - maxCountPerGrade / 2)(" ").mkString
-          val padding = s"\t$spaces"
-          s"${cyan(grade)}:$padding$row"
-      }.mkString("\n")
-      _ <- IO(logger.info(s"Pyramid:\n$pyramid"))
+          val row = draw(onsights, b, green) + draw(flashes, b, yellow) + draw(redpoints, b, red)
+          val stats = s" ${green(onsights.toString.reverse.padTo(2, ' ').reverse)} $l ${red(redpoints.toString.reverse.padTo(2, ' ').reverse)} "
+          val gradeStr = cyan(grade).padTo(16, ' ')
+          s"$gradeStr$l$stats$l $row"
+      }
+      longestRowLen = pyramid.map(_.length).max
+      box =
+      "┌─Grade──┬─OS─┬─RP─┬".padTo(longestRowLen - 51, '─') + "┐\n" +
+      pyramid
+        .map(row => s"$l ${row.padTo(longestRowLen, ' ')} $l")
+        .mkString("\n") +
+      "\n└────────┴────┴────┴".padTo(longestRowLen - 50, '─') + "┘\n"
+      _ <- IO(logger.info(s"Pyramid:\n$box"))
     } yield {
       ExitCode.Success
     }
