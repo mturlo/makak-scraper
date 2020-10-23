@@ -18,6 +18,7 @@ libraryDependencies ++= {
     "com.typesafe.scala-logging" %% "scala-logging" % "3.9.2",
     "ch.qos.logback" % "logback-classic" % "1.2.3",
     "net.ruippeixotog" %% "scala-scraper" % "2.2.0",
+    "org.apache.commons" % "commons-math3" % "3.6.1",
 
     // test
     "org.scalatest" %% "scalatest" % V.scalatest % "test"

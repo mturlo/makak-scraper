@@ -1,5 +1,7 @@
 import java.text.NumberFormat
 
+import org.apache.commons.math3.stat.descriptive.rank.Percentile
+
 trait Display {
 
   type Paint = Any => String
@@ -19,6 +21,7 @@ trait Display {
   private def line(num: Int, char: Char, paint: Paint): String = paint(Seq.fill(num)(char).mkString)
 
   def display(countPerGrade: List[(Grade, Map[String, Int])]): String = {
+
     val pyramid = countPerGrade.map {
       case (grade, a) =>
         val onsights = a.getOrElse("OS", 0)
@@ -29,9 +32,10 @@ trait Display {
         val gradeStr = cyan(grade).padTo(16, ' ')
         s"$gradeStr$l$stats$l $row"
     }
-    val longestRowLen = pyramid.map(_.length).max
+
+    val sumCountPerGrade = countPerGrade.map { case (grade, a) => grade -> a.values.sum }
+
     val avgGradeValue = {
-      val sumCountPerGrade = countPerGrade.map { case (grade, a) => grade -> a.values.sum }
       val totalGrades = sumCountPerGrade.map(_._2).sum
       val accumulatedGrades = sumCountPerGrade.foldLeft(0d) {
         case (acc, (grade, n)) => acc + grade.value * n
@@ -40,14 +44,28 @@ trait Display {
     }
     val avgGrade = Grade.fromValue(avgGradeValue)
     val percentage = 1 + (avgGradeValue - avgGrade.value) / avgGrade.value
-    val format = NumberFormat.getPercentInstance()
-    format.setMaximumFractionDigits(2)
+    val percentFormat = NumberFormat.getPercentInstance()
+    percentFormat.setMaximumFractionDigits(2)
+    val percentageStr = (if (percentage > 1) green else red) (percentFormat.format(percentage))
+
+    val gradeValues = sumCountPerGrade.flatMap {
+      case (grade, n) => Seq.fill(n)(grade.value)
+    }
+    def nthPercentileGradeStr(quantile: Int) = s"\n\t$quantile: ${cyan(Grade.fromValue(new Percentile(quantile).evaluate(gradeValues.toArray)))}"
+
+    val longestRowLen = pyramid.map(_.length).max
     "┌─Grade──┬─OS─┬─RP─┬".padTo(longestRowLen - 51, '─') + "┐\n" +
     pyramid
       .map(row => s"$l ${row.padTo(longestRowLen, ' ')} $l")
       .mkString("", "\n", "\n") +
     "└────────┴────┴────┴".padTo(longestRowLen - 51, '─') + "┘\n" +
-    s"Average grade: $avgGrade (${format.format(percentage)})"
+    s"📈 Average grade: ${cyan(avgGrade)} ($percentageStr)\n" +
+    s"📊 Percentiles:" +
+      nthPercentileGradeStr(50) +
+      nthPercentileGradeStr(75) +
+      nthPercentileGradeStr(90) +
+      nthPercentileGradeStr(95) +
+      nthPercentileGradeStr(99)
   }
 
 }
